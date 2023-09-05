@@ -10,7 +10,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.example.model.Question;
+import com.example.model.QuestionWrapper;
 import com.example.model.Quiz;
+import com.example.model.QuizAnsResponse;
 import com.example.repository.QuestionRepository;
 import com.example.repository.QuizRepository;
 
@@ -52,6 +54,33 @@ public class QuizService {
 			e.printStackTrace();
 		}
 		return new ResponseEntity<List<Quiz>>(new ArrayList<Quiz>(),HttpStatus.BAD_GATEWAY);
+	}
+
+	public ResponseEntity<List<QuestionWrapper>> getQuizQuestions(long id) {
+		List<QuestionWrapper> questionWrapperList = new ArrayList<QuestionWrapper>();
+		Quiz quiz = quizRepository.findById(id).orElse(null);
+		if(quiz != null) {
+			List<Question> QuestionList = quiz.getQuestionList();
+			for(Question question : QuestionList) {
+				QuestionWrapper questionWrapper = new QuestionWrapper(question.getId(),question.getQuestionTitle(),question.getOption1(),question.getOption2(),question.getOption3(),question.getOption4());
+				questionWrapperList.add(questionWrapper);
+			}
+			return new ResponseEntity<List<QuestionWrapper>>(questionWrapperList, HttpStatus.OK);
+		}
+		return new ResponseEntity<List<QuestionWrapper>>(questionWrapperList, HttpStatus.BAD_REQUEST);
+	}
+
+	public ResponseEntity<String> calculateResult(long id, List<QuizAnsResponse> quizAnsResponseList) {
+		int result = 0;
+			for(QuizAnsResponse response : quizAnsResponseList) {
+				Question question = questionRepository.findById(response.getId()).orElse(null);
+				if(question != null ){
+					String correctAnswer = question.getRightAnswer();
+					String enteredAnswer =  response.getEnteredAnswer();
+					if(enteredAnswer.equals(correctAnswer))result++;
+				}
+			}
+		return new ResponseEntity<String>("Your Score is "+result ,HttpStatus.OK);
 	}
 
 }
